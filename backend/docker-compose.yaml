@@ -1,0 +1,26 @@
+services:
+  class-db:
+    container_name: class-db
+    build: .
+    ports:
+      - 3000:3000
+    env_file:
+      - .env
+    command: ["./command.sh"]
+    depends_on:
+      - db-class
+
+  db-class:
+    container_name: db-class
+    image: postgres:17
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db-class
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

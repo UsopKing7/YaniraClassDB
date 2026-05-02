@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ErrorType {
+  SYNTAX
+  SEMANTIC
+  LOGIC
+}
+
+enum Topic {
+  SELECT
+  INSERT
+  UPDATE
+  DELETE
+  JOIN
+  GROUP_BY
+  HAVING
+  SUBQUERY
+  DDL
+  DCL
+  TCL
+  AGGREGATE
+}
+
+model User {
+  id_user  String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+  role     Role   @default(STUDENT)
+
+  attemps  Attempt[]
+  progress Progress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Exercise {
+  id_exercise String     @id @default(uuid())
+  title       String
+  description String
+  difficulty  Difficulty
+  topic       Topic
+  expectedSql String
+  isActive    Boolean    @default(true)
+
+  createdAt DateTime  @default(now())
+  attempts  Attempt[]
+}
+
+model Attempt {
+  id_attempt  String     @id @default(uuid())
+  id_user     String
+  id_exercise String
+  userSql     String
+  isCorrect   Boolean
+  feedback    String
+  errorType   ErrorType?
+
+  user     User     @relation(fields: [id_user], references: [id_user])
+  exercise Exercise @relation(fields: [id_exercise], references: [id_exercise])
+
+  createdAt DateTime @default(now())
+}
+
+model Progress {
+  id_progress String   @id @default(uuid())
+  id_user     String
+  topic       String
+  score       Int      @default(0)
+  total       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [id_user], references: [id_user])
+
+  @@unique([id_user, topic])
+}
