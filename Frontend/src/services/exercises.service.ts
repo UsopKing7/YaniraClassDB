@@ -28,7 +28,7 @@ export const useExercises = () => {
   const fetchExercises = async () => {
     try {
       setLoading(true)
-      const response = await fetch(domain + '/api/exercises', {
+      const response = await fetch(domain + '/api/exercises',  {
         credentials: 'include'
       })
       if (!response.ok) {
@@ -52,7 +52,7 @@ export const useExercises = () => {
 }
 
 export const createExercise = async (data: any) => {
-  const res = await fetch(domain + '/api/exercies/create', {
+  const res = await fetch(domain + '/api/exercises/create', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -68,7 +68,7 @@ export const createExercise = async (data: any) => {
 }
 
 export const updateExercise = async (id_exercise: string, data: UpdatedExercise) => {
-  const res = await fetch(domain + `/api/exercies/update/${id_exercise}`, {
+  const res = await fetch(domain + `/api/exercises/update/${id_exercise}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json'
