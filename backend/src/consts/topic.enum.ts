@@ -12,3 +12,9 @@ export enum Topic {
   TCL = 'TCL',
   AGGREGATE = 'AGGREGATE'
 }
+
+export enum AttempError {
+  SYNTAX = 'SYNTAX',
+  SEMANTIC = 'SEMANTIC',
+  LOGIC = 'LOGIC'
+}
