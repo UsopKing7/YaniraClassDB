@@ -1,7 +1,19 @@
 import { domain } from "../consts/env";
 import type { UserLogin, UserRegister } from "../interfaces/auth.interface"
 
-export const login = async (user: UserLogin) => {
+interface User {
+  id: string
+  email: string
+  role: string
+  name?: string
+}
+
+interface LoginResponse {
+  user: User
+  message?: string
+}
+
+export const login = async (user: UserLogin): Promise<LoginResponse> => {
   const response = await fetch(domain + '/api/login', {
     method: 'POST',
     credentials: 'include',
@@ -32,4 +44,3 @@ export const register = async (user: UserRegister) => {
 
   return data
 }
-
