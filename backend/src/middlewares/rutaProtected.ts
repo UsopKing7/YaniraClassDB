@@ -11,5 +11,7 @@ export const rutaProtected = (req: Request, _res: Response, next: NextFunction) 
     const payload = jwt.verify(token, env.SECRET_KEY) as ReqUser
     req.user = payload
     return next()
-  } catch (error) {}
+  } catch (error) {
+    return _res.status(401).json({ message: 'Unauthorized' })
+  }
 }
