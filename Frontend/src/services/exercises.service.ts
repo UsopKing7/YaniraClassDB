@@ -28,7 +28,7 @@ export const useExercises = () => {
   const fetchExercises = async () => {
     try {
       setLoading(true)
-      const response = await fetch(domain + '/api/exercises',  {
+      const response = await fetch(domain + '/api/exercises', {
         credentials: 'include'
       })
       if (!response.ok) {
