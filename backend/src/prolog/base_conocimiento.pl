@@ -1,6 +1,6 @@
 % ==========================================
-% BASE DE CONOCIMIENTO - Agente Pedagógico
-% Versión 2.0 - 100+ reglas de evaluación
+% BASE DE CONOCIMIENTO - Agente Pedagogico
+% Version 2.0 - 100+ reglas de evaluacion
 % ==========================================
 
 % ------------------------------------------
@@ -437,7 +437,7 @@ tipo_padre(tcl_savepoint, tcl).
 % 3. DETECTAR tipo de consulta (40+ reglas)
 % ------------------------------------------
 
-% HAVING (más específico que GROUP BY)
+% HAVING (mas especifico que GROUP BY)
 tipo_consulta(SQL, having) :-
   sub_string(SQL, _, _, _, 'HAVING').
 
@@ -493,7 +493,7 @@ tipo_consulta(SQL, subquery) :-
   ; sub_string(SQL, _, _, _, 'ALL (')
   ).
 
-% JOIN types (más específico a más general)
+% JOIN types (mas especifico a mas general)
 tipo_consulta(SQL, full_join) :-
   sub_string(SQL, _, _, _, 'FULL JOIN').
 tipo_consulta(SQL, right_join) :-
@@ -607,7 +607,7 @@ tipo_consulta(SQL, rename) :-
 tipo_consulta(SQL, cast) :-
   sub_string(SQL, _, _, _, 'CAST(').
 
-% SELECT (catch-all, va al último)
+% SELECT (catch-all, va al ultimo)
 tipo_consulta(SQL, select) :-
   sub_string(SQL, _, _, _, 'SELECT').
 
@@ -619,7 +619,7 @@ nivel_dificultad(medium).
 nivel_dificultad(hard).
 
 % ------------------------------------------
-% 5. VALIDAR keywords según tipo y nivel
+% 5. VALIDAR keywords segun tipo y nivel
 % ------------------------------------------
 keywords_validas(SQL, Tipo, Nivel) :-
   ( tipo_padre(Tipo, Padre) -> TipoEfectivo = Padre ; TipoEfectivo = Tipo ),
@@ -629,10 +629,10 @@ keywords_validas(SQL, Tipo, Nivel) :-
   ).
 
 % ------------------------------------------
-% 6. VALIDACIÓN DE ESTRUCTURA (30+ reglas)
+% 6. VALIDACION DE ESTRUCTURA (30+ reglas)
 % ------------------------------------------
 
-% Regla base: estructura válida por defecto
+% Regla base: estructura valida por defecto
 estructura_valida(_, desconocido).
 
 % SELECT 6 rules
@@ -810,7 +810,7 @@ estructura_valida(SQL, aggregate) :-
   ; sub_string(SQL, _, _, _, 'MIN(')
   ; sub_string(SQL, _, _, _, 'MAX(').
 
-% Helper: verifica que después de Keyword hay algo
+% Helper: verifica que despues de Keyword hay algo
 despues_de_hay_algo(String, Keyword) :-
   sub_string(String, Before, _, After, Keyword),
   After > 0.
@@ -820,32 +820,33 @@ despues_de_hay_algo(String, Keyword) :-
 % ------------------------------------------
 
 % UPDATE/DELETE sin WHERE
-tiene_antipatron(SQL, update_sin_where) :-
+tiene_antipatron(SQL, Expected, update_sin_where) :-
   sub_string(SQL, _, _, _, 'UPDATE'),
   \+ sub_string(SQL, _, _, _, 'WHERE').
-tiene_antipatron(SQL, delete_sin_where) :-
+tiene_antipatron(SQL, Expected, delete_sin_where) :-
   sub_string(SQL, _, _, _, 'DELETE'),
   sub_string(SQL, _, _, _, 'FROM'),
   \+ sub_string(SQL, _, _, _, 'WHERE').
 
-% SELECT * sin filtro
-tiene_antipatron(SQL, select_star) :-
-  sub_string(SQL, _, _, _, 'SELECT *').
+% SELECT * sin filtro (solo si expected no lo usa tambien)
+tiene_antipatron(SQL, Expected, select_star) :-
+  sub_string(SQL, _, _, _, 'SELECT *'),
+  \+ sub_string(Expected, _, _, _, 'SELECT *').
 
 % NULL comparado con =
-tiene_antipatron(SQL, null_con_igual) :-
+tiene_antipatron(SQL, Expected, null_con_igual) :-
   sub_string(SQL, _, _, _, '= NULL'),
-  \+ sub_string(SQL, _, _, _, 'IS NULL').
+  \+ sub_string(Expected, _, _, _, 'IS NULL').
 
-% LIKE sin wildcard
-tiene_antipatron(SQL, like_sin_wildcard) :-
+% LIKE sin wildcard (solo si expected tiene wildcards)
+tiene_antipatron(SQL, Expected, like_sin_wildcard) :-
   sub_string(SQL, _, _, _, 'LIKE'),
   ( sub_string(SQL, _, _, _, "''") ; true ),
   \+ sub_string(SQL, _, _, _, '%'),
   \+ sub_string(SQL, _, _, _, '_').
 
-% GROUP BY sin función de agregación en SELECT
-tiene_antipatron(SQL, groupby_sin_agg) :-
+% GROUP BY sin funcion de agregacion en SELECT
+tiene_antipatron(SQL, Expected, groupby_sin_agg) :-
   sub_string(SQL, _, _, _, 'GROUP BY'),
   \+ sub_string(SQL, _, _, _, 'COUNT('),
   \+ sub_string(SQL, _, _, _, 'SUM('),
@@ -854,106 +855,128 @@ tiene_antipatron(SQL, groupby_sin_agg) :-
   \+ sub_string(SQL, _, _, _, 'MIN(').
 
 % HAVING sin GROUP BY
-tiene_antipatron(SQL, having_sin_groupby) :-
+tiene_antipatron(SQL, Expected, having_sin_groupby) :-
   sub_string(SQL, _, _, _, 'HAVING'),
   \+ sub_string(SQL, _, _, _, 'GROUP BY').
 
-% ORDER BY sin LIMIT
-tiene_antipatron(SQL, orderby_sin_limit) :-
+% ORDER BY sin LIMIT (solo si expected tiene LIMIT)
+tiene_antipatron(SQL, Expected, orderby_sin_limit) :-
   sub_string(SQL, _, _, _, 'ORDER BY'),
   \+ sub_string(SQL, _, _, _, 'LIMIT'),
   \+ sub_string(SQL, _, _, _, 'TOP ').
 
 % DISTINCT con GROUP BY (redundante)
-tiene_antipatron(SQL, distinct_con_groupby) :-
+tiene_antipatron(SQL, Expected, distinct_con_groupby) :-
   sub_string(SQL, _, _, _, 'DISTINCT'),
   sub_string(SQL, _, _, _, 'GROUP BY').
 
 % CROSS JOIN sin WHERE
-tiene_antipatron(SQL, cross_join_sin_where) :-
+tiene_antipatron(SQL, Expected, cross_join_sin_where) :-
   sub_string(SQL, _, _, _, 'CROSS JOIN'),
   \+ sub_string(SQL, _, _, _, 'WHERE').
 
 % NOT IN con posible NULL
-tiene_antipatron(SQL, not_in_con_null) :-
+tiene_antipatron(SQL, Expected, not_in_con_null) :-
   sub_string(SQL, _, _, _, 'NOT IN').
 
 % WHERE 1=1
-tiene_antipatron(SQL, where_1_1) :-
+tiene_antipatron(SQL, Expected, where_1_1) :-
   sub_string(SQL, _, _, _, 'WHERE 1=1').
 
-% COUNT(*) específicamente (vs COUNT(col))
-tiene_antipatron(SQL, count_star) :-
-  sub_string(SQL, _, _, _, 'COUNT(*)').
+% COUNT(*) especifico (solo si expected no usa COUNT(*) tambien)
+tiene_antipatron(SQL, Expected, count_star) :-
+  sub_string(SQL, _, _, _, 'COUNT(*)'),
+  \+ sub_string(Expected, _, _, _, 'COUNT(*)').
 
-% IN con lista vacía
-tiene_antipatron(SQL, in_vacio) :-
+% IN con lista vacia
+tiene_antipatron(SQL, Expected, in_vacio) :-
   sub_string(SQL, _, _, _, 'IN ()').
 
-% BETWEEN mal usado (sin AND)
-tiene_antipatron(SQL, between_sin_and) :-
-  sub_string(SQL, _, _, _, 'BETWEEN'),
-  \+ sub_string(SQL, _, _, _, 'BETWEEN'),
-  \+ sub_string(SQL, _, _, _, 'AND').
-
-% JOIN sin ON
-tiene_antipatron(SQL, join_sin_on) :-
+% JOIN sin ON (no aplica si el expected tampoco tiene ON)
+tiene_antipatron(SQL, Expected, join_sin_on) :-
   sub_string(SQL, _, _, _, 'JOIN'),
   \+ sub_string(SQL, _, _, _, 'ON'),
   \+ sub_string(SQL, _, _, _, 'NATURAL'),
   \+ sub_string(SQL, _, _, _, 'CROSS').
 
-% ORDER BY por posición (mala práctica)
-tiene_antipatron(SQL, orderby_posicion) :-
+% ORDER BY por posicion
+tiene_antipatron(SQL, Expected, orderby_posicion) :-
   sub_string(SQL, _, _, _, 'ORDER BY 1').
 
-% GROUP BY por posición
-tiene_antipatron(SQL, groupby_posicion) :-
+% GROUP BY por posicion
+tiene_antipatron(SQL, Expected, groupby_posicion) :-
   sub_string(SQL, _, _, _, 'GROUP BY 1').
 
-% HAVING sin función de agregación
-tiene_antipatron(SQL, having_sin_agregacion) :-
+% HAVING sin funcion de agregacion
+tiene_antipatron(SQL, Expected, having_sin_agregacion) :-
   sub_string(SQL, _, _, _, 'HAVING'),
   sub_string(SQL, _, _, _, '= '),
   \+ sub_string(SQL, _, _, _, 'COUNT('),
   \+ sub_string(SQL, _, _, _, 'SUM('),
   \+ sub_string(SQL, _, _, _, 'AVG(').
 
-% SELECT sin FROM (Oracle style)
-tiene_antipatron(SQL, select_sin_from) :-
+% SELECT sin FROM
+tiene_antipatron(SQL, Expected, select_sin_from) :-
   sub_string(SQL, _, _, _, 'SELECT'),
   \+ sub_string(SQL, _, _, _, 'FROM'),
   \+ sub_string(SQL, _, _, _, 'INSERT'),
   \+ sub_string(SQL, _, _, _, 'CREATE').
 
 % COUNT varias columnas
-tiene_antipatron(SQL, count_multi_col) :-
+tiene_antipatron(SQL, Expected, count_multi_col) :-
   sub_string(SQL, _, _, _, 'COUNT('),
   sub_string(SQL, _, _, _, ',').
 
-% Alias sin AS (implícito)
-tiene_antipatron(SQL, alias_sin_as) :-
-  sub_string(SQL, _, _, _, 'FROM'),
-  sub_string(SQL, _, _, _, ' '),
-  sub_string(SQL, _, _, _, '  ').
-
-% LIKE con comodín al inicio (no usa índices)
-tiene_antipatron(SQL, like_comodin_inicio) :-
+% LIKE con comodin al inicio
+tiene_antipatron(SQL, Expected, like_comodin_inicio) :-
   sub_string(SQL, _, _, _, "LIKE '%").
 
-% INSERT sin columnas explícitas
-tiene_antipatron(SQL, insert_sin_columnas) :-
+% INSERT sin columnas explicitas
+tiene_antipatron(SQL, Expected, insert_sin_columnas) :-
   sub_string(SQL, _, _, _, 'INSERT INTO'),
   sub_string(SQL, _, _, _, 'VALUES'),
   \+ sub_string(SQL, _, _, _, '('),
   \+ sub_string(SQL, _, _, _, 'SELECT').
 
 % DOUBLE NOT
-tiene_antipatron(SQL, doble_not) :-
+tiene_antipatron(SQL, Expected, doble_not) :-
   sub_string(SQL, _, _, _, 'NOT NOT').
 
+% TYPOS comunes de SQL
+tiene_antipatron(SQL, _, fro_en_vez_de_from) :-
+  sub_string(SQL, _, _, _, 'FRO '),
+  \+ sub_string(SQL, _, _, _, 'FROM').
+tiene_antipatron(SQL, _, wher_en_vez_de_where) :-
+  sub_string(SQL, _, _, _, 'WHER '),
+  \+ sub_string(SQL, _, _, _, 'WHERE').
+tiene_antipatron(SQL, _, selet_en_vez_de_select) :-
+  ( sub_string(SQL, _, _, _, 'SELET ')
+  ; sub_string(SQL, _, _, _, 'SELCT ')
+  ), \+ sub_string(SQL, _, _, _, 'SELECT').
+tiene_antipatron(SQL, _, form_en_vez_de_from) :-
+  sub_string(SQL, _, _, _, 'FORM ').
+tiene_antipatron(SQL, _, whare_en_vez_de_where) :-
+  sub_string(SQL, _, _, _, 'WHARE ').
+
+% Tabla del FROM no coincide con expected
+tiene_antipatron(SQL, Expected, tabla_incorrecta) :-
+  sub_string(SQL, _, _, _, 'FROM'),
+  sub_string(Expected, _, _, _, 'FROM'),
+  tablas_extraidas(SQL, TablasSQL),
+  tablas_extraidas(Expected, TablasExp),
+  \+ contiene_alguna_tabla(TablasSQL, TablasExp).
+
+contiene_alguna_tabla([], _) :- false.
+contiene_alguna_tabla([T|_], Lista) :- member(T, Lista), !.
+contiene_alguna_tabla([_|R], Lista) :- contiene_alguna_tabla(R, Lista).
+
+tablas_extraidas(String, Tablas) :-
+  split_string(String, " ,;()\n\t", " ,;()\n\t", Palabras),
+  findall(T, (member(T, Palabras), \+ palabra_reservada(T), string_length(T, L), L > 1), Filtradas),
+  sort(Filtradas, Tablas).
+
 % ------------------------------------------
-% 8. CORRECCIÓN vs SQL Esperado (15+ reglas)
+% 8. CORRECCION vs SQL Esperado (15+ reglas)
 % ------------------------------------------
 
 % Extraer palabras significativas (no SQL keywords)
@@ -1028,7 +1051,7 @@ mismos_joins(SQL, Expected) :-
 
 mismos_joins(_, _).
 
-% Evaluación semántica completa
+% Evaluacion semantica completa
 es_correcta_estructura(SQL, Expected) :-
   mismo_tipo_consulta(SQL, Expected),
   contiene_palabras_clave(SQL, Expected).
@@ -1042,26 +1065,26 @@ es_correcta_estructura(SQL, Expected) :-
   mismo_tipo_consulta(SQL, Expected).
 
 % ------------------------------------------
-% 9. FEEDBACK ESPECÍFICO (35+ reglas)
+% 9. FEEDBACK ESPECIFICO (35+ reglas)
 % ------------------------------------------
 
 % Correcto
 feedback_correcto(_, '¡Excelente! Tu consulta SQL es correcta. Buen trabajo!').
 
 % Feedback por keywords faltantes
-feedback_faltan_keywords(select, 'Error de sintaxis en SELECT: la estructura básica es SELECT columnas FROM tabla [WHERE condición] [ORDER BY columna]').
+feedback_faltan_keywords(select, 'Error de sintaxis en SELECT: la estructura basica es SELECT columnas FROM tabla [WHERE condicion] [ORDER BY columna]').
 feedback_faltan_keywords(insert, 'Error de sintaxis en INSERT: la estructura es INSERT INTO tabla (col1, col2) VALUES (val1, val2)').
-feedback_faltan_keywords(update, 'Error de sintaxis en UPDATE: la estructura es UPDATE tabla SET columna = valor WHERE condición').
-feedback_faltan_keywords(delete, 'Error de sintaxis en DELETE: la estructura es DELETE FROM tabla WHERE condición').
+feedback_faltan_keywords(update, 'Error de sintaxis en UPDATE: la estructura es UPDATE tabla SET columna = valor WHERE condicion').
+feedback_faltan_keywords(delete, 'Error de sintaxis en DELETE: la estructura es DELETE FROM tabla WHERE condicion').
 feedback_faltan_keywords(join, 'Error de sintaxis en JOIN: la estructura es SELECT cols FROM t1 JOIN t2 ON t1.col = t2.col').
 feedback_faltan_keywords(group_by, 'Error de sintaxis en GROUP BY: la estructura es SELECT col, COUNT(*) FROM tabla GROUP BY col').
-feedback_faltan_keywords(having, 'Error de sintaxis en HAVING: HAVING se usa después de GROUP BY con funciones de agregación').
+feedback_faltan_keywords(having, 'Error de sintaxis en HAVING: HAVING se usa despues de GROUP BY con funciones de agregacion').
 feedback_faltan_keywords(subquery, 'Error de sintaxis en subconsulta: SELECT col FROM t1 WHERE col IN (SELECT col FROM t2)').
 feedback_faltan_keywords(ddl, 'Error de sintaxis en DDL: CREATE/ALTER/DROP deben especificar el tipo de objeto (TABLE, INDEX, VIEW)').
 feedback_faltan_keywords(dcl, 'Error de sintaxis en DCL: GRANT privilegio ON objeto TO usuario').
 feedback_faltan_keywords(tcl, 'Error de sintaxis en TCL: COMMIT, ROLLBACK o SAVEPOINT para manejo de transacciones').
 feedback_faltan_keywords(aggregate, 'Error de sintaxis en AGGREGATE: usa COUNT/SUM/AVG/MAX/MIN con GROUP BY').
-feedback_faltan_keywords(like, 'Error en LIKE: la estructura es SELECT col FROM tabla WHERE col LIKE patrón').
+feedback_faltan_keywords(like, 'Error en LIKE: la estructura es SELECT col FROM tabla WHERE col LIKE patron').
 feedback_faltan_keywords(between, 'Error en BETWEEN: la estructura es WHERE col BETWEEN valor1 AND valor2').
 feedback_faltan_keywords(is_null, 'Error en IS NULL: la estructura es WHERE col IS NULL').
 feedback_faltan_keywords(in, 'Error en IN: la estructura es WHERE col IN (valor1, valor2, ...)').
@@ -1071,81 +1094,112 @@ feedback_faltan_keywords(union, 'Error en UNION: SELECT cols FROM t1 UNION SELEC
 feedback_faltan_keywords(limit, 'Error en LIMIT: SELECT col FROM tabla LIMIT n').
 feedback_faltan_keywords(cte, 'Error en CTE: WITH nombre_cte AS (SELECT ...) SELECT ... FROM nombre_cte').
 feedback_faltan_keywords(window, 'Error en WINDOW: SELECT col, FUNC() OVER (PARTITION BY col ORDER BY col) FROM tabla').
-feedback_faltan_keywords(case_when, 'Error en CASE: CASE WHEN condición THEN valor ELSE valor END').
-feedback_faltan_keywords(merge, 'Error en MERGE: MERGE INTO destino USING origen ON condición WHEN MATCHED THEN ...').
-feedback_faltan_keywords(cast, 'Error en CAST: CAST(expresión AS tipo)').
+feedback_faltan_keywords(case_when, 'Error en CASE: CASE WHEN condicion THEN valor ELSE valor END').
+feedback_faltan_keywords(merge, 'Error en MERGE: MERGE INTO destino USING origen ON condicion WHEN MATCHED THEN ...').
+feedback_faltan_keywords(cast, 'Error en CAST: CAST(expresion AS tipo)').
 feedback_faltan_keywords(create_index, 'Error en INDEX: CREATE INDEX nombre ON tabla (columna)').
 feedback_faltan_keywords(create_view, 'Error en VIEW: CREATE VIEW nombre AS SELECT ...').
 feedback_faltan_keywords(truncate, 'Error en TRUNCATE: TRUNCATE TABLE nombre').
 feedback_faltan_keywords(comment, 'Error en COMMENT: COMMENT ON TABLE/COLUMN objeto IS texto').
 feedback_faltan_keywords(explain, 'Error en EXPLAIN: EXPLAIN [ANALYZE] SELECT ...').
 
-% Feedback por estructura inválida
-feedback_estructura_invalida(_, select, 'Verifica que tu SELECT tenga columnas después de SELECT y una tabla después de FROM').
+% Feedback por estructura invalida
+feedback_estructura_invalida(_, select, 'Verifica que tu SELECT tenga columnas despues de SELECT y una tabla despues de FROM').
 feedback_estructura_invalida(_, insert, 'INSERT necesita INTO y VALUES o SELECT').
 feedback_estructura_invalida(_, update, 'UPDATE necesita SET con asignaciones').
 feedback_estructura_invalida(_, delete, 'DELETE necesita especificar la tabla con FROM').
-feedback_estructura_invalida(_, join, 'Verifica que tus JOIN tengan la condición ON').
-feedback_estructura_invalida(_, group_by, 'GROUP BY necesita columnas válidas y típicamente funciones de agregación').
-feedback_estructura_invalida(_, having, 'HAVING debe ir acompañado de GROUP BY').
+feedback_estructura_invalida(_, join, 'Verifica que tus JOIN tengan la condicion ON').
+feedback_estructura_invalida(_, group_by, 'GROUP BY necesita columnas validas y tipicamente funciones de agregacion').
+feedback_estructura_invalida(_, having, 'HAVING debe ir acompanado de GROUP BY').
 feedback_estructura_invalida(_, subquery, 'La subconsulta debe tener SELECT, FROM y posibles condiciones').
 feedback_estructura_invalida(_, ddl, 'Verifica la estructura del comando DDL').
-feedback_estructura_invalida(_, like, 'LIKE necesita un patrón de búsqueda').
+feedback_estructura_invalida(_, like, 'LIKE necesita un patron de busqueda').
 feedback_estructura_invalida(_, between, 'BETWEEN necesita valor1 AND valor2').
 feedback_estructura_invalida(_, order_by, 'ORDER BY necesita al menos una columna').
 feedback_estructura_invalida(_, case_when, 'CASE necesita WHEN, THEN y END').
 feedback_estructura_invalida(_, window, 'OVER necesita PARTITION BY o ORDER BY').
 feedback_estructura_invalida(_, cte, 'WITH necesita nombre AS (SELECT ...)').
-feedback_estructura_invalida(_, join, 'Falta la condición ON en el JOIN').
-feedback_estructura_invalida(_, _, 'La estructura de tu consulta no es válida. Revisa la sintaxis SQL').
+feedback_estructura_invalida(_, join, 'Falta la condicion ON en el JOIN').
+feedback_estructura_invalida(_, _, 'La estructura de tu consulta no es valida. Revisa la sintaxis SQL').
 
 % Feedback anti-patrones
-feedback_antipatron(update_sin_where, '⚠️ CUIDADO: Tu UPDATE no tiene WHERE. Se modificarán TODOS los registros de la tabla').
-feedback_antipatron(delete_sin_where, '⚠️ CUIDADO: Tu DELETE no tiene WHERE. Se eliminarán TODOS los registros de la tabla').
-feedback_antipatron(select_star, '💡 CONSEJO: SELECT * devuelve todas las columnas. Es mejor especificar solo las que necesitas').
-feedback_antipatron(null_con_igual, '❌ ERROR LÓGICO: Usaste = NULL. En SQL la comparación correcta es IS NULL').
-feedback_antipatron(like_sin_wildcard, '💡 CONSEJO: Tu LIKE no tiene % ni _. Sin wildcards se comporta como un =').
-feedback_antipatron(groupby_sin_agg, '❌ ERROR: GROUP BY sin COUNT/SUM/AVG/MAX/MIN no agrupa datos útiles').
-feedback_antipatron(having_sin_groupby, '❌ ERROR: HAVING solo tiene sentido después de GROUP BY. Usá WHERE para filtrar filas').
-feedback_antipatron(orderby_sin_limit, '💡 CONSEJO: ORDER BY sin LIMIT puede ser pesado en tablas grandes').
-feedback_antipatron(distinct_con_groupby, '💡 CONSEJO: DISTINCT con GROUP BY es redundante. GROUP BY ya agrupa valores únicos').
-feedback_antipatron(cross_join_sin_where, '⚠️ CUIDADO: CROSS JOIN sin filtro produce producto cartesiano').
-feedback_antipatron(not_in_con_null, '⚠️ CUIDADO: NOT IN con valores NULL no devuelve filas. Considera usar NOT EXISTS').
-feedback_antipatron(where_1_1, '💡 CONSEJO: WHERE 1=1 es útil para debugging pero no necesario en SQL final').
-feedback_antipatron(count_star, '💡 CONSEJO: COUNT(col) es más específico que COUNT(*), solo cuenta no-nulos').
-feedback_antipatron(in_vacio, '❌ ERROR: IN () está vacío, no va a devolver resultados').
-feedback_antipatron(between_sin_and, '❌ ERROR: BETWEEN necesita AND. Ej: BETWEEN 10 AND 20').
-feedback_antipatron(join_sin_on, '❌ ERROR: JOIN necesita ON o USING. Ej: JOIN tabla ON condicion').
-feedback_antipatron(orderby_posicion, '💡 CONSEJO: Usá nombres de columna en ORDER BY en vez de posiciones numéricas').
-feedback_antipatron(groupby_posicion, '💡 CONSEJO: Usá nombres de columna en GROUP BY en vez de posiciones numéricas').
-feedback_antipatron(having_sin_agregacion, '❌ ERROR: En HAVING solo pueden ir condiciones con funciones de agregación').
-feedback_antipatron(select_sin_from, '💡 CONSEJO: SELECT normalmente necesita FROM para especificar la tabla').
-feedback_antipatron(count_multi_col, '❌ ERROR: COUNT(col1, col2) no es válido. Usá COUNT(*) o COUNT(DISTINCT col)').
-feedback_antipatron(like_comodin_inicio, '💡 CONSEJO: LIKE con % al inicio no puede usar índices, es más lento').
-feedback_antipatron(insert_sin_columnas, '💡 CONSEJO: Es buena práctica especificar las columnas en INSERT: INSERT INTO t1 (col1, col2) VALUES (...)').
-feedback_antipatron(doble_not, '❌ ERROR: Doble negación NOT NOT es confusa. Simplificá la lógica').
+feedback_antipatron(update_sin_where, 'CUIDADO: Tu UPDATE no tiene WHERE. Se modificaran TODOS los registros de la tabla').
+feedback_antipatron(delete_sin_where, 'CUIDADO: Tu DELETE no tiene WHERE. Se eliminaran TODOS los registros de la tabla').
+feedback_antipatron(select_star, 'CONSEJO: SELECT * devuelve todas las columnas. Es mejor especificar solo las que necesitas').
+feedback_antipatron(null_con_igual, 'ERROR LOGICO: Usaste = NULL. En SQL la comparacion correcta es IS NULL').
+feedback_antipatron(like_sin_wildcard, 'CONSEJO: Tu LIKE no tiene % ni _. Sin wildcards se comporta como un =').
+feedback_antipatron(groupby_sin_agg, 'ERROR: GROUP BY sin COUNT/SUM/AVG/MAX/MIN no agrupa datos utiles').
+feedback_antipatron(having_sin_groupby, 'ERROR: HAVING solo tiene sentido despues de GROUP BY. Usa WHERE para filtrar filas').
+feedback_antipatron(orderby_sin_limit, 'CONSEJO: ORDER BY sin LIMIT puede ser pesado en tablas grandes').
+feedback_antipatron(distinct_con_groupby, 'CONSEJO: DISTINCT con GROUP BY es redundante. GROUP BY ya agrupa valores unicos').
+feedback_antipatron(cross_join_sin_where, 'CUIDADO: CROSS JOIN sin filtro produce producto cartesiano').
+feedback_antipatron(not_in_con_null, 'CUIDADO: NOT IN con valores NULL no devuelve filas. Considera usar NOT EXISTS').
+feedback_antipatron(where_1_1, 'CONSEJO: WHERE 1=1 es util para debugging pero no necesario en SQL final').
+feedback_antipatron(count_star, 'CONSEJO: COUNT(col) es mas especifico que COUNT(*), solo cuenta no-nulos').
+feedback_antipatron(in_vacio, 'ERROR: IN () esta vacio, no va a devolver resultados').
+feedback_antipatron(between_sin_and, 'ERROR: BETWEEN necesita AND. Ej: BETWEEN 10 AND 20').
+feedback_antipatron(join_sin_on, 'ERROR: JOIN necesita ON o USING. Ej: JOIN tabla ON condicion').
+feedback_antipatron(orderby_posicion, 'CONSEJO: Usa nombres de columna en ORDER BY en vez de posiciones numericas').
+feedback_antipatron(groupby_posicion, 'CONSEJO: Usa nombres de columna en GROUP BY en vez de posiciones numericas').
+feedback_antipatron(having_sin_agregacion, 'ERROR: En HAVING solo pueden ir condiciones con funciones de agregacion').
+feedback_antipatron(select_sin_from, 'CONSEJO: SELECT normalmente necesita FROM para especificar la tabla').
+feedback_antipatron(count_multi_col, 'ERROR: COUNT(col1, col2) no es valido. Usa COUNT(*) o COUNT(DISTINCT col)').
+feedback_antipatron(like_comodin_inicio, 'CONSEJO: LIKE con % al inicio no puede usar indices, es mas lento').
+feedback_antipatron(insert_sin_columnas, 'CONSEJO: Es buena practica especificar las columnas en INSERT: INSERT INTO t1 (col1, col2) VALUES (...)').
+feedback_antipatron(doble_not, 'ERROR: Doble negacion NOT NOT es confusa. Simplifica la logica').
+feedback_antipatron(fro_en_vez_de_from, 'ERROR DE SINTAXIS: Escribiste FRO pero deberia ser FROM').
+feedback_antipatron(wher_en_vez_de_where, 'ERROR DE SINTAXIS: Escribiste WHER pero deberia ser WHERE').
+feedback_antipatron(selet_en_vez_de_select, 'ERROR DE SINTAXIS: Escribiste SELET/SELCT pero deberia ser SELECT').
+feedback_antipatron(form_en_vez_de_from, 'ERROR DE SINTAXIS: Escribiste FORM pero deberia ser FROM').
+feedback_antipatron(whare_en_vez_de_where, 'ERROR DE SINTAXIS: Escribiste WHARE pero deberia ser WHERE').
+feedback_antipatron(tabla_incorrecta, 'ERROR SEMANTICO: La tabla que usaste no coincide con la esperada. Revisa el nombre de la tabla en el FROM').
 
-% Feedback semántico (cuando no coincide con expected)
-feedback_semantico(_, _, 'Tu consulta tiene la estructura correcta pero no coincide con la solución esperada. Revisa las tablas, columnas y condiciones').
-feedback_semantico(SQL, Expected, 'La consulta no coincide con la esperada. Verifica que estés usando las mismas tablas y columnas') :-
+% Feedback semantico (cuando no coincide con expected)
+feedback_semantico(_, _, 'Tu consulta tiene la estructura correcta pero no coincide con la solucion esperada. Revisa las tablas, columnas y condiciones').
+feedback_semantico(SQL, Expected, 'La consulta no coincide con la esperada. Verifica que estes usando las mismas tablas y columnas') :-
   sub_string(SQL, _, _, _, 'SELECT'),
   sub_string(Expected, _, _, _, 'SELECT').
 feedback_semantico(SQL, Expected, 'Revisa las condiciones del WHERE. Puede que falten o sobren condiciones') :-
   sub_string(Expected, _, _, _, 'WHERE'),
   \+ sub_string(SQL, _, _, _, 'WHERE').
-feedback_semantico(_, _, 'Tu consulta usa un tipo de operación diferente al esperado') :-
+feedback_semantico(_, _, 'Tu consulta usa un tipo de operacion diferente al esperado') :-
   true.
 
 % ------------------------------------------
 % 10. EVALUADOR PRINCIPAL
 % ------------------------------------------
 
+% TYPOS comunes de SQL (para deteccion temprana)
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste FRO pero deberia ser FROM') :-
+  sub_string(SQL, _, _, _, 'FRO '),
+  \+ sub_string(SQL, _, _, _, 'FROM').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste WHER pero deberia ser WHERE') :-
+  sub_string(SQL, _, _, _, 'WHER '),
+  \+ sub_string(SQL, _, _, _, 'WHERE').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste SELET o SELCT pero deberia ser SELECT') :-
+  ( sub_string(SQL, _, _, _, 'SELET ') ; sub_string(SQL, _, _, _, 'SELCT ') ),
+  \+ sub_string(SQL, _, _, _, 'SELECT').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste FORM pero deberia ser FROM') :-
+  sub_string(SQL, _, _, _, 'FORM ').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste WHARE pero deberia ser WHERE') :-
+  sub_string(SQL, _, _, _, 'WHARE ').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste UPDTE pero deberia ser UPDATE') :-
+  sub_string(SQL, _, _, _, 'UPDTE ').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste DELTE pero deberia ser DELETE') :-
+  sub_string(SQL, _, _, _, 'DELTE ').
+tiene_typo_sql(SQL, 'ERROR DE SINTAXIS: Escribiste INSER pero deberia ser INSERT') :-
+  sub_string(SQL, _, _, _, 'INSER ').
+
+% Caso 0: TYPOS COMUNES (se evalua antes que keywords)
+evaluar(SQL, _, _, incorrecto, syntax, Feedback) :-
+  tiene_typo_sql(SQL, Feedback), !.
+
 % Caso 1: TODO CORRECTO
 evaluar(SQL, Nivel, Expected, correcto, none, Feedback) :-
   tipo_consulta(SQL, Tipo),
   keywords_validas(SQL, Tipo, Nivel),
   estructura_valida(SQL, Tipo),
-  \+ tiene_antipatron(SQL, _),
+  \+ tiene_antipatron(SQL, Expected, _),
   es_correcta_estructura(SQL, Expected),
   feedback_correcto(Tipo, Feedback), !.
 
@@ -1155,27 +1209,27 @@ evaluar(SQL, Nivel, _, incorrecto, syntax, Feedback) :-
   \+ keywords_validas(SQL, Tipo, Nivel),
   feedback_faltan_keywords(Tipo, Feedback), !.
 
-% Caso 3: ESTRUCTURA INVÁLIDA (SYNTAX)
+% Caso 3: ESTRUCTURA INVALIDA (SYNTAX)
 evaluar(SQL, Nivel, _, incorrecto, syntax, Feedback) :-
   tipo_consulta(SQL, Tipo),
   keywords_validas(SQL, Tipo, Nivel),
   \+ estructura_valida(SQL, Tipo),
   feedback_estructura_invalida(SQL, Tipo, Feedback), !.
 
-% Caso 4: ANTI-PATRÓN (LOGIC)
-evaluar(SQL, Nivel, _, incorrecto, logic, Feedback) :-
+% Caso 4: ANTI-PATRON (LOGIC)
+evaluar(SQL, Nivel, Expected, incorrecto, logic, Feedback) :-
   tipo_consulta(SQL, Tipo),
   keywords_validas(SQL, Tipo, Nivel),
   estructura_valida(SQL, Tipo),
-  tiene_antipatron(SQL, Antipatron),
+  tiene_antipatron(SQL, Expected, Antipatron),
   feedback_antipatron(Antipatron, Feedback), !.
 
 % Caso 5: NO COINCIDE CON ESPERADO (SEMANTIC)
-evaluar(SQL, Nivel, Expected, correcto, none, Feedback) :-
+evaluar(SQL, Nivel, Expected, incorrecto, semantic, Feedback) :-
   tipo_consulta(SQL, Tipo),
   keywords_validas(SQL, Tipo, Nivel),
   estructura_valida(SQL, Tipo),
-  \+ tiene_antipatron(SQL, _),
+  \+ tiene_antipatron(SQL, Expected, _),
   \+ es_correcta_estructura(SQL, Expected),
   !,
   (

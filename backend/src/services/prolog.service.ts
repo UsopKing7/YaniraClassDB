@@ -26,11 +26,11 @@ export const evaluarSQL = (sql: string, nivel: string, expectedSql: string): Pro
 
     const prolog = spawn('swipl', ['-g', query, '-t', 'halt', PROLOG_FILE])
 
-    let output = ''
+    const chunks: Buffer[] = []
     let error = ''
 
-    prolog.stdout.on('data', data => {
-      output += data.toString()
+    prolog.stdout.on('data', (data: Buffer) => {
+      chunks.push(data)
     })
 
     prolog.stderr.on('data', data => {
@@ -38,6 +38,8 @@ export const evaluarSQL = (sql: string, nivel: string, expectedSql: string): Pro
     })
 
     prolog.on('close', code => {
+      const output = Buffer.concat(chunks).toString('utf8')
+
       if (code !== 0 && !output) {
         return reject(new Error(`Prolog error: ${error}`))
       }
