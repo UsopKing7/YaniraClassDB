@@ -3,7 +3,7 @@ import { useExercises } from "../services/exercises.service"
 import { createExercise, updateExercise } from "../services/exercises.service"
 import { createAttempt } from "../services/attemps.service"
 import toast from "react-hot-toast"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface User {
   role?: string
@@ -51,6 +51,101 @@ const TOPICS = [
 ]
 
 // Opciones de dificultad para filtrar
+const CONFETTI_COLORS = ["#22c55e", "#10b981", "#34d399", "#059669", "#fbbf24", "#f59e0b", "#a855f7", "#3b82f6"]
+const CONFETTI_POSITIONS = [
+  { x: 25, y: 30 }, { x: 45, y: 20 }, { x: 65, y: 25 }, { x: 75, y: 40 },
+  { x: 20, y: 60 }, { x: 80, y: 55 }, { x: 35, y: 70 }, { x: 65, y: 65 },
+]
+const CONFETTI_DIRECTIONS = [
+  { x: -30, y: -50 }, { x: 30, y: -60 }, { x: -15, y: -55 }, { x: 40, y: -45 },
+  { x: -25, y: -40 }, { x: 35, y: -35 }, { x: -35, y: -65 }, { x: 20, y: -50 },
+]
+
+
+const SCHEMA_DATA = [
+  {
+    table: "usuarios",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "nombre", type: "VARCHAR" },
+      { name: "email", type: "VARCHAR" },
+      { name: "edad", type: "INT" },
+      { name: "ciudad", type: "VARCHAR" },
+      { name: "rol", type: "VARCHAR" },
+      { name: "activo", type: "BOOLEAN" },
+    ],
+  },
+  {
+    table: "pedidos",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "id_usuario", type: "INT" },
+      { name: "nombre", type: "VARCHAR" },
+      { name: "total", type: "DECIMAL" },
+      { name: "fecha", type: "DATE" },
+      { name: "estado", type: "VARCHAR" },
+    ],
+  },
+  {
+    table: "clientes",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "nombre", type: "VARCHAR" },
+      { name: "email", type: "VARCHAR" },
+      { name: "edad", type: "INT" },
+      { name: "ciudad", type: "VARCHAR" },
+      { name: "activo", type: "BOOLEAN" },
+    ],
+  },
+  {
+    table: "categorias",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "nombre", type: "VARCHAR" },
+    ],
+  },
+  {
+    table: "productos",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "nombre", type: "VARCHAR" },
+      { name: "precio", type: "DECIMAL" },
+    ],
+  },
+  {
+    table: "ventas",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "id_vendedor", type: "INT" },
+      { name: "total", type: "DECIMAL" },
+    ],
+  },
+  {
+    table: "empleados",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "nombre", type: "VARCHAR" },
+      { name: "id_jefe", type: "INT" },
+      { name: "salario", type: "DECIMAL" },
+    ],
+  },
+  {
+    table: "comentarios",
+    columns: [
+      { name: "id", type: "INT", pk: true },
+      { name: "id_usuario", type: "INT" },
+    ],
+  },
+  {
+    table: "premium_users",
+    columns: [
+      { name: "id_usuario", type: "INT" },
+      { name: "nombre", type: "VARCHAR" },
+    ],
+  },
+]
+
+
 const DIFFICULTY_FILTERS = [
   { value: "ALL", label: "Todas", color: "bg-gray-100 text-gray-700" },
   { value: "EASY", label: "Fáciles", color: "bg-green-100 text-green-700" },
@@ -73,6 +168,7 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
   const [userSql, setUserSql] = useState("")
   const [attemptResult, setAttemptResult] = useState<AttemptResponse | null>(null)
   const [isChecking, setIsChecking] = useState(false)
+  const [isSchemaOpen, setIsSchemaOpen] = useState(false)
 
   const isAdmin = user?.role === "ADMIN"
 
@@ -173,6 +269,7 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
     setSelectedExercise(exercise)
     setUserSql("")
     setAttemptResult(null)
+    setIsSchemaOpen(false)
     setIsPracticeModalOpen(true)
   }
 
@@ -734,10 +831,23 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
               ? "ring-4 ring-green-400 shadow-green-200"
               : ""
           }`}>
-            <div className="sticky top-0 bg-white flex justify-between items-center p-6 border-b border-gray-200 z-10">
-              <h2 className="text-xl font-semibold text-gray-900">
-                🚀 Practicar: {selectedExercise.title}
-              </h2>
+            <div className={`sticky top-0 bg-white flex justify-between items-center p-6 border-b z-10 transition-colors duration-300 ${
+              attemptResult
+                ? attemptResult.isCorrect
+                  ? "border-green-200 bg-green-50/50"
+                  : "border-red-200 bg-red-50/50"
+                : "border-gray-200"
+            }`}>
+              <div className="flex items-center gap-3">
+                {attemptResult && (
+                  <span className={`w-3 h-3 rounded-full shadow-sm ${
+                    attemptResult.isCorrect ? "bg-green-500 animate-pulse" : "bg-red-500 animate-pulse"
+                  }`} />
+                )}
+                <h2 className="text-xl font-semibold text-gray-900">
+                  🚀 Practicar: {selectedExercise.title}
+                </h2>
+              </div>
               <button
                 onClick={() => {
                   setIsPracticeModalOpen(false)
@@ -761,49 +871,123 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
                 </div>
               </div>
 
+              {/* Botón Ver esquema */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsSchemaOpen(!isSchemaOpen)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all text-sm font-medium text-gray-700 group"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isSchemaOpen ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    📖 Ver esquema de tablas
+                  </span>
+                  <span className="text-xs text-gray-400">{isSchemaOpen ? "Ocultar" : "Mostrar"}</span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {isSchemaOpen && (
+                    <motion.div
+                      key="schema"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                        {SCHEMA_DATA.map((t) => (
+                          <div key={t.table}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="w-2 h-2 rounded-full bg-gray-900" />
+                              <span className="text-sm font-bold text-gray-900">{t.table}</span>
+                            </div>
+                            <div className="ml-4 space-y-0.5">
+                              {t.columns.map((c) => (
+                                <div key={c.name} className="flex items-center gap-2 text-xs font-mono">
+                                  <span className={`${c.pk ? "text-amber-600 font-bold" : "text-gray-600"}`}>
+                                    {c.pk ? "🔑 " : ""}{c.name}
+                                  </span>
+                                  <span className="text-gray-400">{c.type}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {attemptResult && (
                 <motion.div
                   variants={feedbackVariants}
                   initial="initial"
                   animate={attemptResult.isCorrect ? "animate" : "shake"}
-                  className={`p-5 rounded-xl border-2 ${
+                  className={`relative overflow-hidden rounded-xl border-l-4 ${
                     attemptResult.isCorrect
-                      ? "bg-green-50 border-green-300 shadow-lg shadow-green-100"
+                      ? "border-green-500 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 shadow-lg shadow-green-200/50"
                       : attemptResult.errorType === "SYNTAX"
-                      ? "bg-red-50 border-red-300 shadow-lg shadow-red-100"
+                      ? "border-red-500 bg-gradient-to-br from-red-50 via-rose-50 to-red-100 shadow-lg shadow-red-200/50"
                       : attemptResult.errorType === "SEMANTIC"
-                      ? "bg-orange-50 border-orange-300 shadow-lg shadow-orange-100"
+                      ? "border-orange-500 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 shadow-lg shadow-orange-200/50"
                       : attemptResult.errorType === "LOGIC"
-                      ? "bg-amber-50 border-amber-300 shadow-lg shadow-amber-100"
-                      : "bg-red-50 border-red-300 shadow-lg shadow-red-100"
+                      ? "border-amber-500 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 shadow-lg shadow-amber-200/50"
+                      : "border-red-500 bg-gradient-to-br from-red-50 via-rose-50 to-red-100 shadow-lg shadow-red-200/50"
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-xl ${
+                  {/* Confetti para respuestas correctas */}
+                  {attemptResult.isCorrect && (
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+                      {CONFETTI_COLORS.map((color, i) => (
+                        <motion.div
+                          key={i}
+                          className="absolute w-2 h-2 rounded-full"
+                          style={{
+                            backgroundColor: color,
+                            left: `${CONFETTI_POSITIONS[i].x}%`,
+                            top: `${CONFETTI_POSITIONS[i].y}%`,
+                          }}
+                          initial={{ scale: 0, opacity: 1 }}
+                          animate={{
+                            scale: [0, 1.5, 0],
+                            opacity: [1, 1, 0],
+                            x: CONFETTI_DIRECTIONS[i].x,
+                            y: CONFETTI_DIRECTIONS[i].y,
+                          }}
+                          transition={{ duration: 0.9, delay: i * 0.05, ease: "easeOut" }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-2xl shadow-lg ${
                       attemptResult.isCorrect
-                        ? "bg-green-200"
+                        ? "bg-green-200 shadow-green-300/50"
                         : attemptResult.errorType === "SYNTAX"
-                        ? "bg-red-200"
+                        ? "bg-red-200 shadow-red-300/50"
                         : attemptResult.errorType === "SEMANTIC"
-                        ? "bg-orange-200"
+                        ? "bg-orange-200 shadow-orange-300/50"
                         : attemptResult.errorType === "LOGIC"
-                        ? "bg-amber-200"
-                        : "bg-red-200"
+                        ? "bg-amber-200 shadow-amber-300/50"
+                        : "bg-red-200 shadow-red-300/50"
                     }`}>
                       {attemptResult.isCorrect ? "✅" : "❌"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         {attemptResult.errorType === "SYNTAX" && (
-                          <span className="px-2.5 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-md">ERROR DE SINTAXIS</span>
+                          <span className="px-3 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-md">ERROR DE SINTAXIS</span>
                         )}
                         {attemptResult.errorType === "SEMANTIC" && (
-                          <span className="px-2.5 py-0.5 bg-orange-200 text-orange-800 text-xs font-bold rounded-md">ERROR SEMÁNTICO</span>
+                          <span className="px-3 py-0.5 bg-orange-200 text-orange-800 text-xs font-bold rounded-md">ERROR SEMÁNTICO</span>
                         )}
                         {attemptResult.errorType === "LOGIC" && (
-                          <span className="px-2.5 py-0.5 bg-amber-200 text-amber-800 text-xs font-bold rounded-md">ERROR DE LÓGICA</span>
+                          <span className="px-3 py-0.5 bg-amber-200 text-amber-800 text-xs font-bold rounded-md">ERROR DE LÓGICA</span>
                         )}
-                        <span className={`text-base font-bold ${
+                        <span className={`text-lg font-bold tracking-tight ${
                           attemptResult.isCorrect ? "text-green-800" : "text-red-800"
                         }`}>
                           {attemptResult.isCorrect ? "¡Correcto!" : "Incorrecto"}
