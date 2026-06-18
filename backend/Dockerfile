@@ -1,6 +1,6 @@
 FROM node:22-bookworm-slim
 
-RUN apt-get update && apt-get install -y swi-prolog
+RUN apt-get update && apt-get install -y swi-prolog postgresql-client
 
 WORKDIR /app
 

@@ -20,7 +20,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: db_class
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_yanira_db:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  pgdata_yanira_db:

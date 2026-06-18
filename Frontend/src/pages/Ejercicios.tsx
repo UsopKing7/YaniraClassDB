@@ -1,7 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useExercises } from "../services/exercises.service"
 import { createExercise, updateExercise } from "../services/exercises.service"
 import { createAttempt } from "../services/attemps.service"
+import toast from "react-hot-toast"
+import { motion } from "framer-motion"
 
 interface User {
   role?: string
@@ -25,6 +27,7 @@ interface Exercise {
 interface AttemptResponse {
   isCorrect: boolean
   feedback: string
+  errorType?: string | null
   attempt?: {
     id_attempt: string
     userSql: string
@@ -98,11 +101,11 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
 
     const formData = new FormData(e.currentTarget)
     const data = {
-      title: formData.get("title"),
-      description: formData.get("description"),
-      difficulty: formData.get("difficulty"),
-      topic: formData.get("topic"),
-      expectedSql: formData.get("expectedSql"),
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      difficulty: formData.get("difficulty") as string,
+      topic: formData.get("topic") as string,
+      expectedSql: formData.get("expectedSql") as string,
     }
 
     try {
@@ -124,11 +127,11 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
 
     const formData = new FormData(e.currentTarget)
     const data = {
-      title: formData.get("title"),
-      description: formData.get("description"),
-      difficulty: formData.get("difficulty"),
-      topic: formData.get("topic"),
-      expectedSql: formData.get("expectedSql"),
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      difficulty: formData.get("difficulty") as string,
+      topic: formData.get("topic") as string,
+      expectedSql: formData.get("expectedSql") as string,
     }
 
     try {
@@ -171,6 +174,58 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
     setUserSql("")
     setAttemptResult(null)
     setIsPracticeModalOpen(true)
+  }
+
+  // Toast cuando se recibe el resultado de la práctica
+  useEffect(() => {
+    if (!attemptResult) return
+
+    if (attemptResult.isCorrect) {
+      toast.success("✅ ¡Correcto! Tu consulta SQL es válida.", {
+        duration: 4000,
+        style: {
+          background: "#052e16",
+          color: "#bbf7d0",
+          border: "1px solid #166534",
+          borderRadius: "12px",
+          fontWeight: 600,
+        },
+      })
+    } else {
+      const errorLabels: Record<string, string> = {
+        SYNTAX: "Error de sintaxis",
+        SEMANTIC: "Error semántico",
+        LOGIC: "Error de lógica",
+      }
+      const label = attemptResult.errorType
+        ? errorLabels[attemptResult.errorType] || "Error"
+        : "Error"
+      toast.error(`❌ ${label}: ${attemptResult.feedback}`, {
+        duration: 6000,
+        style: {
+          background: "#450a0a",
+          color: "#fecaca",
+          border: "1px solid #991b1b",
+          borderRadius: "12px",
+          fontWeight: 600,
+        },
+      })
+    }
+  }, [attemptResult])
+
+  const feedbackVariants = {
+    initial: { x: 0, scale: 0.85, opacity: 0, y: -15 },
+    shake: {
+      x: [0, -10, 10, -10, 10, -5, 5, 0],
+      transition: { duration: 0.5 },
+    },
+    animate: {
+      scale: 1,
+      opacity: 1,
+      y: 0,
+      x: 0,
+      transition: { type: "spring" as const, stiffness: 300, damping: 20 },
+    },
   }
 
   const openEditModal = (exercise: Exercise) => {
@@ -666,8 +721,20 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
       {/* Modal para practicar ejercicio - con mejor estilo */}
       {isPracticeModalOpen && selectedExercise && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white flex justify-between items-center p-6 border-b border-gray-200">
+          <div className={`bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-shadow duration-300 ${
+            attemptResult && !attemptResult.isCorrect
+              ? attemptResult.errorType === "SYNTAX"
+                ? "ring-4 ring-red-400 shadow-red-200"
+                : attemptResult.errorType === "SEMANTIC"
+                ? "ring-4 ring-orange-400 shadow-orange-200"
+                : attemptResult.errorType === "LOGIC"
+                ? "ring-4 ring-yellow-400 shadow-yellow-200"
+                : "ring-4 ring-red-400 shadow-red-200"
+              : attemptResult?.isCorrect
+              ? "ring-4 ring-green-400 shadow-green-200"
+              : ""
+          }`}>
+            <div className="sticky top-0 bg-white flex justify-between items-center p-6 border-b border-gray-200 z-10">
               <h2 className="text-xl font-semibold text-gray-900">
                 🚀 Practicar: {selectedExercise.title}
               </h2>
@@ -694,6 +761,72 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
                 </div>
               </div>
 
+              {attemptResult && (
+                <motion.div
+                  variants={feedbackVariants}
+                  initial="initial"
+                  animate={attemptResult.isCorrect ? "animate" : "shake"}
+                  className={`p-5 rounded-xl border-2 ${
+                    attemptResult.isCorrect
+                      ? "bg-green-50 border-green-300 shadow-lg shadow-green-100"
+                      : attemptResult.errorType === "SYNTAX"
+                      ? "bg-red-50 border-red-300 shadow-lg shadow-red-100"
+                      : attemptResult.errorType === "SEMANTIC"
+                      ? "bg-orange-50 border-orange-300 shadow-lg shadow-orange-100"
+                      : attemptResult.errorType === "LOGIC"
+                      ? "bg-amber-50 border-amber-300 shadow-lg shadow-amber-100"
+                      : "bg-red-50 border-red-300 shadow-lg shadow-red-100"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-xl ${
+                      attemptResult.isCorrect
+                        ? "bg-green-200"
+                        : attemptResult.errorType === "SYNTAX"
+                        ? "bg-red-200"
+                        : attemptResult.errorType === "SEMANTIC"
+                        ? "bg-orange-200"
+                        : attemptResult.errorType === "LOGIC"
+                        ? "bg-amber-200"
+                        : "bg-red-200"
+                    }`}>
+                      {attemptResult.isCorrect ? "✅" : "❌"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        {attemptResult.errorType === "SYNTAX" && (
+                          <span className="px-2.5 py-0.5 bg-red-200 text-red-800 text-xs font-bold rounded-md">ERROR DE SINTAXIS</span>
+                        )}
+                        {attemptResult.errorType === "SEMANTIC" && (
+                          <span className="px-2.5 py-0.5 bg-orange-200 text-orange-800 text-xs font-bold rounded-md">ERROR SEMÁNTICO</span>
+                        )}
+                        {attemptResult.errorType === "LOGIC" && (
+                          <span className="px-2.5 py-0.5 bg-amber-200 text-amber-800 text-xs font-bold rounded-md">ERROR DE LÓGICA</span>
+                        )}
+                        <span className={`text-base font-bold ${
+                          attemptResult.isCorrect ? "text-green-800" : "text-red-800"
+                        }`}>
+                          {attemptResult.isCorrect ? "¡Correcto!" : "Incorrecto"}
+                        </span>
+                      </div>
+                      <p className={`text-sm leading-relaxed font-medium ${
+                        attemptResult.isCorrect
+                          ? "text-green-700"
+                          : attemptResult.errorType === "SYNTAX"
+                          ? "text-red-700"
+                          : attemptResult.errorType === "SEMANTIC"
+                          ? "text-orange-700"
+                          : attemptResult.errorType === "LOGIC"
+                          ? "text-amber-700"
+                          : "text-red-700"
+                      }`}>
+                        {attemptResult.feedback}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   💻 Tu consulta SQL
@@ -707,19 +840,6 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-400 focus:border-transparent outline-none transition-all font-mono text-sm"
                 />
               </div>
-
-              {attemptResult && (
-                <div className={`p-4 rounded-xl border-2 ${attemptResult.isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"} animate-fadeIn`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-sm font-bold ${attemptResult.isCorrect ? "text-green-700" : "text-red-700"}`}>
-                      {attemptResult.isCorrect ? "✅ ¡Correcto!" : "❌ Incorrecto"}
-                    </span>
-                  </div>
-                  <p className={`text-sm ${attemptResult.isCorrect ? "text-green-600" : "text-red-600"}`}>
-                    {attemptResult.feedback}
-                  </p>
-                </div>
-              )}
 
               <div className="flex gap-3 pt-4">
                 <button

@@ -9,9 +9,20 @@ interface PrologResult {
   feedback: string
 }
 
-export const evaluarSQL = (sql: string, nivel: string): Promise<PrologResult> => {
+function escapePrologString(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+}
+
+export const evaluarSQL = (sql: string, nivel: string, expectedSql: string): Promise<PrologResult> => {
   return new Promise((resolve, reject) => {
-    const query = `evaluar("${sql}", ${nivel}, R, E, F), write(R), write('|'), write(E), write('|'), write(F), nl, halt.`
+    const escapedSql = escapePrologString(sql)
+    const escapedExpected = escapePrologString(expectedSql)
+    const query = `evaluar("${escapedSql}", ${nivel}, "${escapedExpected}", R, E, F), write(R), write('|'), write(E), write('|'), write(F), nl, halt.`
 
     const prolog = spawn('swipl', ['-g', query, '-t', 'halt', PROLOG_FILE])
 
@@ -31,7 +42,6 @@ export const evaluarSQL = (sql: string, nivel: string): Promise<PrologResult> =>
         return reject(new Error(`Prolog error: ${error}`))
       }
 
-      // output => "correcto|none|Tu consulta es correcta!"
       const parts = output.trim().split('|')
 
       if (parts.length < 3) {

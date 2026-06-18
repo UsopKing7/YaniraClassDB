@@ -57,6 +57,22 @@ else
 fi
 
 # shellcheck disable=SC3037
+echo -e "${colorAzul}| Verificando ejercicios..."
+EXERCISE_COUNT=$(psql "$DATABASE_URL" -t -A -c "SELECT COUNT(*) FROM \"Exercise\"" 2>/dev/null || echo "0")
+if [ "$EXERCISE_COUNT" = "0" ]; then
+  echo -e "${colorAzul}| Cargando 135+ ejercicios iniciales..."
+  mostrar_carga "ejercicios"
+  psql "$DATABASE_URL" -f exercises.sql 2>/dev/null 1>/dev/null
+  if [ $? -eq 0 ]; then
+    echo -e "${colorVerde} ✓ Ejercicios cargados exitosamente"
+  else
+    echo -e "${colorRojo} ✗ Error al cargar ejercicios"
+  fi
+else
+  echo -e "${colorVerde} ✓ Ejercicios ya existen ($EXERCISE_COUNT registros)"
+fi
+
+# shellcheck disable=SC3037
 echo -e "${colorAzul}| Iniciando servidor"
 mostrar_carga "servidor"
 npm start

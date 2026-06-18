@@ -21,7 +21,7 @@ export const AttempService = {
     const nivel = nivelMap[exercise.difficulty]
 
     // 3. Evaluar con Prolog
-    const { isCorrect, errorType, feedback } = await evaluarSQL(userSql, nivel)
+    const { isCorrect, errorType, feedback } = await evaluarSQL(userSql, nivel, exercise.expectedSql)
 
     // 4. Guardar el intento
     const attempt = await AttempRepositorie.create({
@@ -33,6 +33,6 @@ export const AttempService = {
       errorType: errorType as AttempError
     })
 
-    return { attempt, feedback, isCorrect }
+    return { attempt, feedback, isCorrect, errorType }
   }
 }

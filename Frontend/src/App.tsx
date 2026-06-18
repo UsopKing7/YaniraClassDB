@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom"
+import { Toaster } from "react-hot-toast"
 import { Login } from "./pages/Login"
 import { Register } from "./pages/Register"
 import { Ejercicios } from "./pages/Ejercicios"
@@ -27,6 +28,18 @@ export const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 5000,
+          style: {
+            borderRadius: "12px",
+            padding: "16px",
+            fontSize: "14px",
+            fontWeight: 600,
+          },
+        }}
+      />
       <Routes>
         <Route path="/" element={<Login setUser={handleSetUser} />} />
         <Route path="/register" element={<Register />} />
