@@ -310,6 +310,29 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
     }
   }, [attemptResult])
 
+  useEffect(() => {
+    if (!attemptResult?.isCorrect || !selectedExercise) return
+
+    const timer = setTimeout(() => {
+      const currentIndex = filteredExercises.findIndex(
+        e => e.id_exercise === selectedExercise.id_exercise
+      )
+      const nextExercise = filteredExercises[currentIndex + 1]
+
+      if (nextExercise) {
+        openPracticeModal(nextExercise)
+      } else {
+        setIsPracticeModalOpen(false)
+        setSelectedExercise(null)
+        setAttemptResult(null)
+        setUserSql("")
+        toast.success("🎉 ¡Felicidades! Completaste todos los ejercicios")
+      }
+    }, 1800)
+
+    return () => clearTimeout(timer)
+  }, [attemptResult, selectedExercise, filteredExercises])
+
   const feedbackVariants = {
     initial: { x: 0, scale: 0.85, opacity: 0, y: -15 },
     shake: {
