@@ -14,5 +14,10 @@ export const userController = {
     const { message, user, token } = await UserService.findUserByEmail(data)
     res.cookie('access_token', token, cookieOptions)
     return res.status(200).json({ message, user })
+  },
+
+  getAll: async (_req: Request, res: Response) => {
+    const users = await UserService.getAll()
+    return res.status(200).json({ users })
   }
 }

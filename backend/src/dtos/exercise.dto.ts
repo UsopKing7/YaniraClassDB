@@ -8,7 +8,6 @@ export namespace ExerciseDTOs {
     difficulty: Difficulty
     topic: Topic
     expectedSql: string
-    id_exercise: string
   }
 
   export interface update {

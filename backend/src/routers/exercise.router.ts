@@ -7,9 +7,9 @@ export const exerciseRouter = Router()
 
 exerciseRouter.get('/exercises', rutaProtected, ExerciseController.getAll)
 exerciseRouter.get('/exercises/:id_exercise', rutaProtected, ExerciseController.findExerciseById)
-exerciseRouter.post('/exercies/create', rutaProtected, checkAdminRol, ExerciseController.create)
+exerciseRouter.post('/exercises/create', rutaProtected, checkAdminRol, ExerciseController.create)
 exerciseRouter.patch(
-  '/exercies/update/:id_exercise',
+  '/exercises/update/:id_exercise',
   rutaProtected,
   checkAdminRol,
   ExerciseController.update

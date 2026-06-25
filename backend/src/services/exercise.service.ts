@@ -2,8 +2,8 @@ import { ExerciseDTOs } from '../dtos/exercise.dto'
 import { EjerciciosRepositorie } from '../repositories/ejercicios.repositorie'
 
 export const ExerciseService = {
-  getAll: async () => {
-    return await EjerciciosRepositorie.getAll()
+  getAll: async (filters?: { topic?: string; difficulty?: string }) => {
+    return await EjerciciosRepositorie.getAll(filters)
   },
 
   findEjercicioById: async (id_exercise: string) => {

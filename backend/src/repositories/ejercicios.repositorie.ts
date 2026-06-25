@@ -2,8 +2,11 @@ import { prisma } from '../config/prisma'
 import { ExerciseDTOs } from '../dtos/exercise.dto'
 
 export const EjerciciosRepositorie = {
-  getAll: async () => {
-    return await prisma.exercise.findMany()
+  getAll: async (filters?: { topic?: string; difficulty?: string }) => {
+    const where: Record<string, string> = {}
+    if (filters?.topic) where.topic = filters.topic
+    if (filters?.difficulty) where.difficulty = filters.difficulty
+    return await prisma.exercise.findMany({ where })
   },
 
   findExerciseById: async (id_exercise: string) => {

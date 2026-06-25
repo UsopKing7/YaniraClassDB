@@ -3,16 +3,19 @@ import { Toaster } from "react-hot-toast"
 import { Login } from "./pages/Login"
 import { Register } from "./pages/Register"
 import { Ejercicios } from "./pages/Ejercicios"
+import { AdminUsers } from "./pages/AdminUsers"
 import { useState, useEffect } from "react"
 
 export const App = () => {
   const [user, setUser] = useState<{ role?: string; id_user?: string; email?: string } | null>(null)
 
+  const storedUser = localStorage.getItem("user")
+  const initialUser = storedUser ? JSON.parse(storedUser) : null
+
   // Cargar usuario desde localStorage al iniciar la app
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
+    if (!user && initialUser) {
+      setUser(initialUser)
     }
   }, [])
 
@@ -43,7 +46,8 @@ export const App = () => {
       <Routes>
         <Route path="/" element={<Login setUser={handleSetUser} />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/ejercicios" element={<Ejercicios user={user} />} />
+        <Route path="/ejercicios" element={<Ejercicios user={user ?? undefined} />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
       </Routes>
     </div>
   )

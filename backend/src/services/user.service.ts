@@ -29,5 +29,9 @@ export const UserService = {
     const userRol = await UserRepositorie.findUserRolById(id_user, role)
     if (!userRol) throw new Error('User not admin')
     return userRol
+  },
+
+  getAll: async () => {
+    return await UserRepositorie.findAll()
   }
 }

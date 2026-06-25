@@ -2,8 +2,13 @@ import { Request, Response } from 'express'
 import { ExerciseService } from '../services/exercise.service'
 
 export const ExerciseController = {
-  getAll: async (_req: Request, res: Response): Promise<Response> => {
-    const exercises = await ExerciseService.getAll()
+  getAll: async (req: Request, res: Response): Promise<Response> => {
+    const { topic, difficulty } = req.query
+    const filters = {
+      ...(topic && { topic: topic as string }),
+      ...(difficulty && { difficulty: difficulty as string })
+    }
+    const exercises = await ExerciseService.getAll(filters)
     return res.status(200).json({ exercises })
   },
 

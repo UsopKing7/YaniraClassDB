@@ -18,5 +18,17 @@ export const UserRepositorie = {
     return await prisma.user.findFirst({
       where: { id_user, role }
     })
+  },
+
+  findAll: async () => {
+    return await prisma.user.findMany({
+      select: {
+        id_user: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true
+      }
+    })
   }
 }

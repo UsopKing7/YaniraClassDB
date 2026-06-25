@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useExercises } from "../services/exercises.service"
-import { createExercise, updateExercise } from "../services/exercises.service"
+import { createExercise, updateExercise, deleteExercise } from "../services/exercises.service"
 import { createAttempt } from "../services/attemps.service"
 import toast from "react-hot-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -154,6 +155,7 @@ const DIFFICULTY_FILTERS = [
 ]
 
 export const Ejercicios = ({ user }: EjerciciosProps) => {
+  const navigate = useNavigate()
   const { exercises, loading, error, refetch } = useExercises()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -407,15 +409,26 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
             </div>
             <div className="flex gap-3">
               {isAdmin && (
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nuevo Ejercicio
-                </button>
+                <>
+                  <button
+                    onClick={() => navigate('/admin/users')}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                    Panel Admin
+                  </button>
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo Ejercicio
+                  </button>
+                </>
               )}
               <button
                 onClick={() => {
@@ -570,12 +583,30 @@ export const Ejercicios = ({ user }: EjerciciosProps) => {
                   </div>
                   <div className="flex gap-2 shrink-0">
                     {isAdmin && (
-                      <button
-                        onClick={() => openEditModal(exercise)}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-                      >
-                        ✏️ Editar
-                      </button>
+                      <>
+                        <button
+                          onClick={() => openEditModal(exercise)}
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(`¿Eliminar "${exercise.title}"?`)) {
+                              try {
+                                await deleteExercise(exercise.id_exercise)
+                                toast.success(`Ejercicio "${exercise.title}" eliminado`)
+                                refetch()
+                              } catch {
+                                toast.error('Error al eliminar el ejercicio')
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium rounded-lg transition-colors"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => openPracticeModal(exercise)}

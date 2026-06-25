@@ -67,6 +67,18 @@ export const createExercise = async (data: any) => {
   return response.exercise
 }
 
+export const deleteExercise = async (id_exercise: string) => {
+  const res = await fetch(domain + `/api/exercises/delete/${id_exercise}`, {
+    method: 'PATCH',
+    credentials: 'include'
+  })
+
+  const response = await res.json()
+  if (!res.ok) throw new Error(response.message)
+
+  return response
+}
+
 export const updateExercise = async (id_exercise: string, data: UpdatedExercise) => {
   const res = await fetch(domain + `/api/exercises/update/${id_exercise}`, {
     method: 'PATCH',

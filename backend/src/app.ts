@@ -1,11 +1,15 @@
 import { connectDB } from './config/prisma'
 import { env } from './consts/env'
 import { app } from './server'
+import { seedAdmin } from './seed'
 
-connectDB()
+;(async () => {
+  await connectDB()
+  await seedAdmin()
 
-app.listen(env.port, () => {
-  console.table({
-    URL: 'http://localhost:' + env.port
+  app.listen(env.port, () => {
+    console.table({
+      URL: 'http://localhost:' + env.port
+    })
   })
-})
+})()
